@@ -18,6 +18,7 @@ Examples:
 import argparse
 import asyncio
 import re
+import ssl
 import sys
 import urllib.request
 from urllib.error import URLError
@@ -95,7 +96,13 @@ def download_vtt(vtt_url: str) -> str:
     """
     print(f"Downloading transcript...", file=sys.stderr)
     try:
-        with urllib.request.urlopen(vtt_url, timeout=30) as response:
+        # Create SSL context that doesn't verify certificates
+        # (Vimeo's caption CDN sometimes has certificate issues)
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+
+        with urllib.request.urlopen(vtt_url, timeout=30, context=ctx) as response:
             return response.read().decode('utf-8')
     except URLError as e:
         print(f"Error downloading VTT: {e}", file=sys.stderr)
